@@ -22,6 +22,7 @@
 
             // PART ONE
             PartOne.SortLists(listA, listB);
+            PartTwo.CalculateSimilarity(listA, listB);
         }
     }
 }
