@@ -52,61 +52,66 @@ namespace AoC_24_2
     {
         public static bool ActivateAdvancedProblemDampener(string report)
         {
-            var reportNumbers = report.Split(' ').ToList();
-            bool pass = false;
+            int[] levels = report.Split(' ').Select(int.Parse).ToArray();
 
-            for (int i = 0; i < reportNumbers.Count; i++)
+            // Try removing each level
+            for (int i = 0; i < levels.Length; i++)
             {
-                List<string> copyList = new(reportNumbers);
-                copyList.Remove(reportNumbers[i]);
-                var newReport = string.Empty;
+                int[] modifiedLevels = levels.Where((_, index) => index != i).ToArray();
 
-                foreach (var element in copyList)
-                {
-                    newReport += element + " ";
-                }
+                bool increasing = IsIncreasing(modifiedLevels);
+                bool decreasing = IsDecreasing(modifiedLevels);
 
-                if (CheckReport(newReport.TrimEnd()))
-                {
-                    Console.WriteLine("Report passed when removing " + reportNumbers[i]);
-                    pass = true;
-                    break;
-                }
+                if ((increasing || decreasing) && IsAdjacentDifferenceValid(modifiedLevels))
+                    return true;
             }
 
-            return pass;
+            return false;
+        }
+
+        static bool IsIncreasing(int[] levels)
+        {
+            for (int i = 1; i < levels.Length; i++)
+            {
+                if (levels[i] <= levels[i - 1]) return false;
+            }
+            return true;
+        }
+
+        static bool IsDecreasing(int[] levels)
+        {
+            for (int i = 1; i < levels.Length; i++)
+            {
+                if (levels[i] >= levels[i - 1]) return false;
+            }
+            return true;
+        }
+
+        static bool IsAdjacentDifferenceValid(int[] levels)
+        {
+            for (int i = 1; i < levels.Length; i++)
+            {
+                int diff = Math.Abs(levels[i] - levels[i - 1]);
+                if (diff == 0 || diff > 3) return false;
+            }
+            return true;
         }
 
         public static bool CheckReport(string report)
         {
-            var reportNumbers = report.Split(' ');
-            int prevTemp = int.Parse(reportNumbers[0]);
-            int difference = prevTemp - int.Parse(reportNumbers[1]);
-            bool isIncreasing = difference > 0;
-           
+            int[] levels = report.Split(' ').Select(int.Parse).ToArray();
 
-            for (int i =  1; i < reportNumbers.Length; i++)
+
+            bool increasing = IsIncreasing(levels);
+            bool decreasing = IsDecreasing(levels);
+
+            if ((increasing || decreasing) && IsAdjacentDifferenceValid(levels))
             {
-                var currentTemp = int.Parse(reportNumbers[i]);
-                difference = prevTemp - currentTemp;
-
-                if (currentTemp == prevTemp)
-                {
-                    return false;
-                }
-                if (Math.Abs(currentTemp - prevTemp) > 3)
-                {
-                    return false;
-                }
-                if (isIncreasing != difference > 0)
-                {
-                    return false;
-                }
-
-                prevTemp = currentTemp;
+                return true;
             }
 
-            return true;
+
+            return false;
         }
     }
 }
