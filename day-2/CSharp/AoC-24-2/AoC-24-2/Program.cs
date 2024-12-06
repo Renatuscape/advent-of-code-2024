@@ -1,59 +1,83 @@
-﻿namespace AoC_24_2
+﻿using System.Xml.Linq;
+
+namespace AoC_24_2
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            string[] lines = File.ReadAllLines("input-coa-24-2.txt");
+            string[] reports = File.ReadAllLines("input-coa-24-2.txt");
             int passes = 0;
             int reportsChecked = 0;
+            List<string> failedReports = new();
 
-            foreach (string line in lines)
+            foreach (string report in reports)
             {
                 reportsChecked++;
-                Console.WriteLine($"CHECKING REPORT #{reportsChecked} " + line);
+                Console.WriteLine($"CHECKING REPORT #{reportsChecked} " + report);
 
-                if (ReportChecker.CheckReport(line, out var problemIndex))
+                if (ReportChecker.CheckReport(report))
                 {
-                    Console.WriteLine($"\t\tReport passed" + line + "\n");
+                    Console.WriteLine($"\t\tReport passed " + report + "\n");
                     passes++;
                 }
                 else
                 {
-                    Console.WriteLine($"\t\tReport failed " + line + "\n");
-
-                    var newReport = ReportChecker.ActivateProblemDampener(line, problemIndex);
-
-                    if (ReportChecker.CheckReport(newReport, out var x))
-                    {
-                        Console.WriteLine($"\t\tDampened Report passed " + line + "\n");
-                        passes++;
-                    }
+                    Console.WriteLine($"\t\tReport failed " + report + "\n");
+                    failedReports.Add(report);
                 }
             }
 
-            Console.WriteLine($"\n{passes} REPORTS PASSED");
+            Console.WriteLine($"\n{passes} REPORTS PASSED. {failedReports.Count} REPORTS FAILED.");
+            Console.WriteLine($"\n\n\n** Activating ADVANCED PROBLEM DAMPENER ***\n");
+
+            foreach (var report in failedReports)
+            {
+                if (ReportChecker.ActivateAdvancedProblemDampener(report))
+                {
+                    Console.WriteLine($"\t\tReport passed " + report + "\n");
+                    passes++;
+                }
+                else
+                {
+                    Console.WriteLine($"\t\tReport failed " + report + "\n");
+                }
+            }
+
+            Console.WriteLine($"\n{passes} REPORTS PASSED AFTER DAMPENING.");
         }
     }
 
     internal static class ReportChecker
     {
-        public static string ActivateProblemDampener(string report, int problemIndex)
+        public static bool ActivateAdvancedProblemDampener(string report)
         {
             var reportNumbers = report.Split(' ').ToList();
-            reportNumbers.Remove(reportNumbers[problemIndex]);
+            bool pass = false;
 
-            report = "";
-
-            foreach (var element in reportNumbers)
+            for (int i = 0; i < reportNumbers.Count; i++)
             {
-                report += element + " ";
+                List<string> copyList = new(reportNumbers);
+                copyList.Remove(reportNumbers[i]);
+                var newReport = string.Empty;
+
+                foreach (var element in copyList)
+                {
+                    newReport += element + " ";
+                }
+
+                if (CheckReport(newReport.TrimEnd()))
+                {
+                    Console.WriteLine("Report passed when removing " + reportNumbers[i]);
+                    pass = true;
+                    break;
+                }
             }
 
-            return report.TrimEnd();
+            return pass;
         }
 
-        public static bool CheckReport(string report, out int problemIndex)
+        public static bool CheckReport(string report)
         {
             var reportNumbers = report.Split(' ');
             int prevTemp = int.Parse(reportNumbers[0]);
@@ -63,32 +87,25 @@
 
             for (int i =  1; i < reportNumbers.Length; i++)
             {
-                problemIndex = i;
                 var currentTemp = int.Parse(reportNumbers[i]);
                 difference = prevTemp - currentTemp;
 
-                Console.WriteLine($"\t\tThe difference between {prevTemp} and {currentTemp} is {difference}. Temperature is {(isIncreasing ? "increasing" : "decreasing")}");
-
                 if (currentTemp == prevTemp)
                 {
-                    Console.WriteLine($"\t\t!! Current temp equalled previous temp");
                     return false;
                 }
                 if (Math.Abs(currentTemp - prevTemp) > 3)
                 {
-                    Console.WriteLine($"\t\t!! Temp varied by more than 3");
                     return false;
                 }
                 if (isIncreasing != difference > 0)
                 {
-                    Console.WriteLine($"\t\t!! Temperature trend changed!");
                     return false;
                 }
 
                 prevTemp = currentTemp;
             }
 
-            problemIndex = -1;
             return true;
         }
     }
