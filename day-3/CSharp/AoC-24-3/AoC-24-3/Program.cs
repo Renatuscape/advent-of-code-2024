@@ -7,8 +7,9 @@ namespace AoC_24_3
         static void Main(string[] args)
         {
             string input = File.ReadAllText("input-coa-24-3.txt");
-            string pattern = @"mul\(([0-9,]+)\)";
+            string pattern = @"(mul\(([0-9,]+)\)|do\(\)|don't\(\))";
             int sum = 0;
+            bool doMul = true;
 
             MatchCollection matches = Regex.Matches(input, pattern);
 
@@ -21,8 +22,19 @@ namespace AoC_24_3
                 {
                     Console.WriteLine(instruction); // Outputs: data1, data2
 
-                    var numbers = instruction.Split(',');
-                    sum += int.Parse(numbers[0]) * int.Parse(numbers[1]);
+                    if (instruction == "do()")
+                    {
+                        doMul = true;
+                    }
+                    else if (instruction == "don't()")
+                    {
+                        doMul = false;
+                    }
+                    else if (doMul)
+                    {
+                        var numbers = instruction.Replace("mul(", "").Replace(")", "").Split(',');
+                        sum += int.Parse(numbers[0]) * int.Parse(numbers[1]);
+                    }
                 }
             }
 
