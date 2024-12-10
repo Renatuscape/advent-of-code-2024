@@ -43,7 +43,6 @@ namespace AoC_24_4
 
             // PART 2
             List<XMas> xMaslist = new List<XMas>();
-            int scoreP2 = 0;
 
             for (int i = 0; i < input.Length; i++) {
 
