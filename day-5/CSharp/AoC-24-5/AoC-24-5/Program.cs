@@ -1,7 +1,7 @@
 ﻿
 namespace AoC_24_5
 {
-    internal class Program
+    internal partial class Program
     {
         static void Main(string[] args)
         {
@@ -24,91 +24,35 @@ namespace AoC_24_5
 
             Console.WriteLine("\n\tCleared updates: " + validUpdates.Count +
                 "\n\tFailed updates: " + invalidUpdates.Count +
-                "\n\tTotal updates: " + UpdateValidator.updates.Count + 
+                "\n\tTotal updates: " + UpdateValidator.updates.Count +
                 "\n\tSCORE: " + sum);
-        }
 
-        internal static class UpdateValidator
-        {
-            internal static List<Rule> rules = new();
-            internal static List<string> updates = new();
-            internal static void CleanInput(string[] input)
-            {
-                List<string> rulesRaw = new();
+            int totalFails = invalidUpdates.Count;
+            var fixedUpdates = invalidUpdates;
+            List<string> validatedFixedUpdates = new();
 
-                bool foundBreak = false;
-
-                foreach (string line in input)
-                {
-                    if (!foundBreak)
-                    {
-                        if (line == "")
-                        {
-                            foundBreak = true;
-                        }
-                        else
-                        {
-                            rulesRaw.Add(line);
-                        }
-                    }
-                    else
-                    {
-                        updates.Add(line);
-                    }
-                }
-
-                BuildRules(rulesRaw);
-
-                Console.WriteLine("\nUPDATES");
-                foreach (var line in updates)
-                {
-                    Console.WriteLine(line);
-                }
+            while (totalFails > 0) {
+                Console.WriteLine("\n\nRUNNING UPDATE FIXER\n");
+                fixedUpdates = UpdateValidator.FixUpdates(fixedUpdates);
+                UpdateValidator.updates = fixedUpdates;
+                validatedFixedUpdates = UpdateValidator.CheckUpdates(out var invalidUpdatesB);
+                totalFails = invalidUpdatesB.Count;
+                Console.WriteLine("\n\tFixed updates: " + fixedUpdates.Count +
+                    "\n\tPassing fixed updates: " + validatedFixedUpdates.Count +
+                    "\n\tFailed fixed updates: " + invalidUpdatesB.Count);
             }
 
-            internal static void BuildRules(List<string> rulesRaw)
-            {
-                foreach (var line in rulesRaw)
-                {
-                    Rule rule = new();
-                    rules.Add(rule);
+            sum = 0;
 
-                    var ruleNumbers = line.Split('|');
-                    rule.ruleX = ruleNumbers[0];
-                    rule.ruleY = ruleNumbers[1];
-                }
+            foreach (string passingRule in validatedFixedUpdates)
+            {
+                var pageNumbers = passingRule.Split(',');
+                var middleIndex = pageNumbers.Length / 2;
+                var middlePage = int.Parse(pageNumbers[middleIndex]);
+                sum += middlePage;
             }
 
-            internal static List<string> CheckUpdates(out List<string> invalidUpdates)
-            {
-                List<string> validUpdates = new();
-                invalidUpdates = new();
-
-                foreach (var update in updates)
-                {
-                    bool failedCheck = false;
-
-                    foreach (var rule in rules)
-                    {
-                        if (rule.CheckRuleValid(update))
-                        {
-                            if (!rule.CheckRule(update))
-                            {
-                                failedCheck = true;
-                                invalidUpdates.Add(update);
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!failedCheck)
-                    {
-                        validUpdates.Add(update);
-                    }
-                }
-
-                return validUpdates;
-            }
+            Console.WriteLine("\n\n\t** FINAL SUM: " + sum + " **");
         }
 
         internal class Rule
@@ -131,10 +75,10 @@ namespace AoC_24_5
 
                 if (splitNumbers[0].Contains(ruleX))
                 {
-                    Console.WriteLine($"Passed rule {ruleX}|{ruleY}: " + update);
+                    //Console.WriteLine($"Passed rule {ruleX}|{ruleY}: " + update);
                     return true;
                 }
-                Console.WriteLine($"Failed rule {ruleX}|{ruleY}: " + update);
+                //Console.WriteLine($"Failed rule {ruleX}|{ruleY}: " + update);
                 return false;
             }
         }
