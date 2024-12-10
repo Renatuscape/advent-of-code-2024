@@ -11,12 +11,10 @@ namespace AoC_24_5
             UpdateValidator.CleanInput(input);
 
             // Run pages through rules and collect all updates that pass
-            var passingRules = UpdateValidator.CheckUpdates();
-
-            Console.WriteLine("Found passing rules: " + passingRules.Count);
+            var validUpdates = UpdateValidator.CheckUpdates(out var invalidUpdates);
 
             // Get the middle page number from all passing updates and add to sum
-            foreach (string passingRule in passingRules)
+            foreach (string passingRule in validUpdates)
             {
                 var pageNumbers = passingRule.Split(',');
                 var middleIndex = pageNumbers.Length / 2;
@@ -24,7 +22,10 @@ namespace AoC_24_5
                 sum += middlePage;
             }
 
-            Console.WriteLine("Final sum: " + sum);
+            Console.WriteLine("\n\tCleared updates: " + validUpdates.Count +
+                "\n\tFailed updates: " + invalidUpdates.Count +
+                "\n\tTotal updates: " + UpdateValidator.updates.Count + 
+                "\n\tSCORE: " + sum);
         }
 
         internal static class UpdateValidator
@@ -78,9 +79,10 @@ namespace AoC_24_5
                 }
             }
 
-            internal static List<string> CheckUpdates()
+            internal static List<string> CheckUpdates(out List<string> invalidUpdates)
             {
                 List<string> validUpdates = new();
+                invalidUpdates = new();
 
                 foreach (var update in updates)
                 {
@@ -93,6 +95,7 @@ namespace AoC_24_5
                             if (!rule.CheckRule(update))
                             {
                                 failedCheck = true;
+                                invalidUpdates.Add(update);
                                 break;
                             }
                         }
