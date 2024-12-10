@@ -39,21 +39,69 @@ namespace AoC_24_4
                 score += WordSearcher.LineReader(pattern);
             }
 
-            Console.WriteLine("Found " + score + " matches.");
+            Console.WriteLine("Part 1 found " + score + " matches.");
+
+            // PART 2
+            List<XMas> xMaslist = new List<XMas>();
+            int scoreP2 = 0;
+
+            for (int i = 0; i < input.Length; i++) {
+
+                if (i + 2 < input.Length)
+                {
+                    for (int j = 0; j < input[i].Length; j++)
+                    {
+                        if (j + 2 < input[i].Length)
+                        {
+                            var xMas = new XMas();
+                            xMaslist.Add(xMas);
+
+                            xMas.row1 = input[i][j].ToString() + "." + input[i][j + 2].ToString();
+                            xMas.row2 = "." + input[i+1][j + 1].ToString() + ".";
+                            xMas.row3 = input[i + 2][j].ToString() + "." + input[i + 2][j + 2].ToString();
+                        }
+                    }
+                }
+            }
+
+            xMaslist = WordSearcher.CleanXMasList(xMaslist);
+            Console.WriteLine("Part 2 found " + xMaslist.Count + " matches.");
         }
 
         internal static class WordSearcher
         {
+            internal static List<XMas> CleanXMasList(List<XMas> xMaslist)
+            {
+                var cleanList = new List<XMas>();
+
+                foreach (var xMas in xMaslist)
+                {
+                    if (xMas.row2.Length < 3)
+                    {
+                        xMas.Print();
+                    }
+                    else if (xMas.row2[1] == 'A')
+                    {
+                        if ((xMas.row1[0] == 'M' && xMas.row3[2] == 'S')||
+                            (xMas.row1[0] == 'S' && xMas.row3[2] == 'M'))
+                        {
+                            if ((xMas.row1[2] == 'S' && xMas.row3[0] == 'M')||
+                                (xMas.row1[2] == 'M' && xMas.row3[0] == 'S'))
+                            {
+                                cleanList.Add(xMas);
+                                xMas.Print();
+                            }
+                        }
+                    }
+                }
+
+                return cleanList;
+            }
+
             internal static int LineReader(string input)
             {
                 int xmasCount = input.Split(new[] { "XMAS" }, StringSplitOptions.None).Length - 1;
                 int samxCount = input.Split(new[] { "SAMX" }, StringSplitOptions.None).Length - 1;
-
-                if (xmasCount > 0 || samxCount > 0)
-                {
-                    Console.WriteLine($"Line: {input}");
-                    Console.WriteLine($"XMAS matches: {xmasCount}, SAMX matches: {samxCount}");
-                }
 
                 return xmasCount + samxCount;
             }
@@ -144,6 +192,20 @@ namespace AoC_24_4
                 }
 
                 return pattern;
+            }
+        }
+
+        internal class XMas
+        {
+            public string row1 = "";
+            public string row2 = "";
+            public string row3 = "";
+
+            public void Print()
+            {
+                Console.WriteLine($"|{row1}|");
+                Console.WriteLine($"|{row2}|");
+                Console.WriteLine($"|{row3}|\n");
             }
         }
     }
