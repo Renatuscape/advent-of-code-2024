@@ -432,4 +432,4 @@ bin/
 
 .idea
 
-.txt
+*.txt
