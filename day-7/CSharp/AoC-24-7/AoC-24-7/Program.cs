@@ -1,14 +1,11 @@
-﻿using static System.Runtime.InteropServices.JavaScript.JSType;
-using static AoC_24_7.Program;
-
-namespace AoC_24_7
+﻿namespace AoC_24_7
 {
     internal class Program
     {
         public class Equation
         {
-            public int result;
-            public List<int> values = new();
+            public long result;
+            public List<long> values = new();
         }
         static void Main(string[] args)
         {
@@ -17,19 +14,26 @@ namespace AoC_24_7
 
             foreach (var line in input)
             {
-                Equation newEquation = new();
-
-                var numbers = line.Split(' ');
-                int result = int.Parse(numbers[0].Replace(":", ""));
-
-                newEquation.result = result;
-
-                for (int i = 1; i < numbers.Length; i++)
+                if (line != "")
                 {
-                    newEquation.values.Add(int.Parse(numbers[i]));
-                }
+                    Equation newEquation = new();
 
-                equations.Add(newEquation);
+                    var numbers = line.Split(' ');
+                    if (numbers[0].Contains(":"))
+                    {
+                        //Console.WriteLine(numbers[0]);
+                        long result = long.Parse(numbers[0].Replace(":", ""));
+
+                        newEquation.result = result;
+
+                        for (int i = 1; i < numbers.Length; i++)
+                        {
+                            newEquation.values.Add(int.Parse(numbers[i]));
+                        }
+
+                        equations.Add(newEquation);
+                    }
+                }
             }
 
             foreach (var equation in equations)
@@ -41,23 +45,30 @@ namespace AoC_24_7
                 }
             }
 
-            Console.WriteLine("\n\nAttempting to solve equation\n");
-
+            Console.WriteLine("\n\nAttempting to solve equations\n");
+            long totalSum = 0;
             foreach (var equation in equations)
             {
-                List<List<string>> sequences = new();
 
-                foreach (var opr in MathsMachine.operators)
-                {
-                    var sequence = MathsMachine.BuildOperationSequence(equation, opr);
-                    sequences.Add(sequence);
-                }
+                var sequences = MathsMachine.GenerateOperatorCombinations(equation.values.Count - 1);
 
                 foreach (var sequence in sequences)
                 {
-                    Console.WriteLine("\nRESULT: " + MathsMachine.SolveEquation(equation, sequence));
+                    long result = MathsMachine.SolveEquation(equation, sequence);
+                    //Console.WriteLine("\tResult: " + result);
+                    if (result == equation.result)
+                    {
+                        //Console.WriteLine("\t\tMATCH on equation result.");
+                        totalSum += result;
+                        break;
+                    }
+                    else
+                    {
+                        //Console.WriteLine("\t\tNOT match on equation result.");
+                    }
                 }
             }
+            Console.WriteLine("\n TOTAL SUM IS: " + totalSum);
         }
 
         public static class MathsMachine
@@ -68,36 +79,50 @@ namespace AoC_24_7
                 "+"
             };
 
-            public static List<string> BuildOperationSequence(Equation equation, string opr)
+            public static List<List<string>> GenerateOperatorCombinations(int length)
             {
-                List<string> operatorSequences = new();
-                int operatorSpaces = equation.values.Count - 1;
+                var combinations = new List<List<string>>();
 
-                for (int i = 0; i < operatorSpaces; i++)
+                // Helper method to generate combinations recursively
+                void GenerateCombinationsRecursive(List<string> currentCombination)
                 {
-                    operatorSequences.Add(opr);
+                    // If we've reached the desired length, add the combination to results
+                    if (currentCombination.Count == length)
+                    {
+                        combinations.Add(new List<string>(currentCombination));
+                        return;
+                    }
+
+                    // Try adding each operator and recursively generate further combinations
+                    foreach (var op in operators)
+                    {
+                        currentCombination.Add(op);
+                        GenerateCombinationsRecursive(currentCombination);
+                        currentCombination.RemoveAt(currentCombination.Count - 1);
+                    }
                 }
 
-                return operatorSequences;
+                // Start the recursive generation
+                GenerateCombinationsRecursive(new List<string>());
+
+                return combinations;
             }
 
-            public static int SolveEquation(Equation equation, List<string> operatorSequence)
+            public static long SolveEquation(Equation equation, List<string> operatorSequence)
             {
-                int result = equation.values[0]; // int operatorSpaces = values.Count - 1;
-                Console.WriteLine($"\nStarting value is {result}");
+                long result = equation.values[0];
+                //Console.WriteLine($"\nAttempting to solve {equation.result}: {string.Join(" ", equation.values.ToArray())}");
 
                 for (int i = 1; i < equation.values.Count; i++)
                 {
-                    Console.WriteLine($"Attempting to solve {result} {operatorSequence[i-1]} {equation.values[i]}");
-                    int output = EquationSwitch(result, equation.values[i], operatorSequence[i-1]);
+                    long output = EquationSwitch(result, equation.values[i], operatorSequence[i - 1]);
                     result = output;
-                    Console.WriteLine($"Output was {output} and current result was {result}");
                 }
 
                 return result;
             }
 
-            public static int EquationSwitch(int x, int y, string mathOperator)
+            public static long EquationSwitch(long x, long y, string mathOperator)
             {
                 if (mathOperator == "*")
                 {
@@ -109,15 +134,15 @@ namespace AoC_24_7
                 }
             }
 
-            static int Multiply(int x, int y)
+            static long Multiply(long x, long y)
             {
-                Console.WriteLine("\tMultiplying " + x + " * " + y + " = " + (x * y));
+                //Console.WriteLine("\tMultiplying " + x + " * " + y + " = " + (x * y));
                 return x * y;
             }
 
-            static int Add(int x, int y)
+            static long Add(long x, long y)
             {
-                Console.WriteLine("\tAdding " + x + " + " + y + " = " + (x + y));
+                //Console.WriteLine("\tAdding " + x + " + " + y + " = " + (x + y));
                 return x + y;
             }
         }
