@@ -18,100 +18,187 @@ namespace AoC_24_6
             public int y = -1;
         }
 
+        public class Turn
+        {
+            public Direction direction;
+            public Coordinates coords = new Coordinates();
+        }
+
         static void Main(string[] args)
         {
             string[] input = File.ReadAllLines("input-aoc-24-6.txt");
-            List<List<char>> map = new();
+
             bool enableAnimation = false;
-            bool delay = false;
+            bool delay = true;
 
             foreach (var line in input)
             {
-                map.Add(line.ToList());
+                GameController.map.Add(line.ToList());
+                GameController.mapCopy.Add(line.ToList());
             }
 
-            Direction direction = GameController.GetInitialDirection();
-
-            Coordinates position = GameController.GetCoordinates(direction, map);
+            GameController.direction = GameController.GetInitialDirection();
+            GameController.coords = GameController.GetCoordinates(GameController.direction, GameController.map);
 
             if (enableAnimation)
             {
-                GameController.PrintMap(map);
-                Console.WriteLine(position.x + "|" + position.y);
-                //Thread.Sleep(500);
+                GameController.PrintMap(GameController.map);
+                Console.WriteLine(GameController.coords.x + "|" + GameController.coords.y);
+                if (delay && enableAnimation)
+                {
+                    Thread.Sleep(500);
+                }
             }
 
-            int steps = 0;
-            while (position.x > -1 && position.y > -1)
+            // PART 1
+            GameController.PlayPatrol(enableAnimation, delay);
+            GameController.CalculateStepScore(!enableAnimation);
+
+
+            //PART 2
+            GameController.ResetBoard();
+
+            int infiniteLoopsFound = 0;
+            for (int y = 0; y < GameController.map.Count; y++)
             {
-                steps++;
-
-                if (GameController.CheckIfCellIsClear(direction, position, map))
+                for (int x = 0; x < GameController.map[y].Count; x++)
                 {
-                    try
+                    if (GameController.PlaceObstacle(x, y))
                     {
-                        GameController.Move(direction, position, map);
+                        var gameCompleted = GameController.PlayPatrol(enableAnimation, delay);
 
-                        if (enableAnimation)
+                        if (!gameCompleted)
                         {
-                            GameController.PrintMap(map);
-                            Console.WriteLine(position.x + "|" + position.y);
-                            if (delay){ Thread.Sleep(100); }
-                        }
-                        else
-                        {
-                            Console.WriteLine("Steps: " + steps);
+                            infiniteLoopsFound++;
+                            Console.WriteLine($"Found infinite loop #{infiniteLoopsFound} at " + x + "," + y);
                         }
                     }
-                    catch
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    GameController.TurnRight(ref direction, position, map);
-
-                    if (enableAnimation)
-                    {
-                        GameController.PrintMap(map);
-                        Console.WriteLine(position.x + "|" + position.y);
-                        if (delay) { Thread.Sleep(100); }
-                    }
-                    else
-                    {
-                        Console.WriteLine("Steps: " + steps + " (turn)");
-                    }
+                    GameController.ResetBoard();
                 }
             }
 
-            Console.WriteLine("\nCompleted run. Calculating score...");
-            int score = 0;
-
-            foreach (var row in map)
-            {
-                foreach (var col in row)
-                {
-                    if (col == 'X')
-                    {
-                        score++;
-                    }
-                }
-            }
-
-            if (!enableAnimation)
-            {
-                GameController.PrintMap(map);
-            }
-
-            Console.WriteLine("\nFINAL SCORE IS: " + score);
+            Console.WriteLine("\nFOUND INFINITE LOOPS: " + infiniteLoopsFound);
         }
 
         public static class GameController
         {
+            public static List<List<char>> mapCopy = new();
+            public static List<List<char>> map = new();
+            public static List<Turn> turnCoords = new();
+            public static Direction direction;
+            public static Coordinates coords = new();
+
+            public static void ResetBoard()
+            {
+                map.Clear();
+
+                foreach (var line in mapCopy)
+                {
+                    map.Add(line.ToList());
+                }
+
+                direction = GetInitialDirection();
+                coords = GetCoordinates(direction, map);
+                turnCoords.Clear();
+            }
+
+            public static bool PlaceObstacle(int x, int y)
+            {
+                if (map[y][x] != GetCharFromDirection(direction) && map[y][x] != '#')
+                {
+                    map[y][x] = 'O';
+                    return true;
+                }
+
+                return false;
+            }
+
+            public static bool PlayPatrol(bool enableAnimation, bool delay)
+            {
+                //int steps = 0;
+                while (coords.x > -1 && coords.y > -1)
+                {
+                    //steps++;
+
+                    if (CheckIfCellIsClear(direction, coords, map))
+                    {
+                        try
+                        {
+                            Move(direction, coords, map);
+
+                            if (enableAnimation)
+                            {
+                                PrintMap(map);
+                                Console.WriteLine(coords.x + "|" + coords.y);
+                                if (delay && enableAnimation) { Thread.Sleep(100); }
+                            }
+                            //else
+                            //{
+                            //    Console.WriteLine("Steps: " + steps);
+                            //}
+                        }
+                        catch
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if (turnCoords.FirstOrDefault(t => t.direction == direction && t.coords.x == coords.x && t.coords.y == coords.y) == null)
+                        {
+                            turnCoords.Add(new() { direction = direction, coords = new() { x = coords.x, y = coords.y } });
+
+                            TurnRight(ref direction, coords, map);
+
+                            if (enableAnimation)
+                            {
+                                PrintMap(map);
+                                Console.WriteLine(coords.x + "|" + coords.y);
+                                if (delay && enableAnimation) { Thread.Sleep(100); }
+                            }
+                            //else
+                            //{
+                            //    Console.WriteLine("Steps: " + steps + " (turn)");
+                            //}
+                        }
+                        else
+                        {
+                            //Console.WriteLine("FOUND REPEATING TURN");
+                            return false; // Play ended in infinite loop
+                        }
+                    }
+                }
+
+                return true; // Play did not end in infinite loop
+            }
+
+
+            public static void CalculateStepScore(bool printMap)
+            {
+                Console.WriteLine("\nCompleted run. Calculating score...");
+                int score = 0;
+
+                foreach (var row in map)
+                {
+                    foreach (var col in row)
+                    {
+                        if (col == 'X')
+                        {
+                            score++;
+                        }
+                    }
+                }
+
+                if (printMap)
+                {
+                    PrintMap(map);
+                }
+
+                Console.WriteLine("\nFINAL SCORE IS: " + score);
+            }
             public static void PrintMap(List<List<char>> map)
             {
-                //Console.Clear();
+                Console.Clear();
 
                 foreach (var row in map)
                 {
@@ -177,7 +264,17 @@ namespace AoC_24_6
             {
                 char foundGuard = '^';
 
-                // Add logic to work with multiple starting positions
+                foreach (var row in map)
+                {
+                    foreach (var col in row)
+                    {
+                        if (col != '#' && col != '.' && col != 'O')
+                        {
+                            foundGuard = col;
+                            break;
+                        }
+                    }
+                }
 
                 return GetDirectionFromChar(foundGuard);
             }
@@ -234,14 +331,14 @@ namespace AoC_24_6
 
                 try
                 {
-                    if (map[y][x] != '#')
+                    if (map[y][x] != '#' && map[y][x] != 'O')
                     {
                         return true;
                     }
                 }
                 catch
                 {
-                    Console.WriteLine("Coordinates were out of bounds");
+                    //Console.WriteLine("Coordinates were out of bounds");
                     return true;
                 }
 
@@ -264,7 +361,6 @@ namespace AoC_24_6
                 map[coords.y][coords.x] = GetCharFromDirection(direction);
             }
 
-            // Move safely
             public static void Move(Direction direction, Coordinates coords, List<List<char>> map)
             {
                 map[coords.y][coords.x] = 'X';
@@ -292,7 +388,7 @@ namespace AoC_24_6
                 }
                 catch
                 {
-                    Console.WriteLine("Attempted movement out of bounds");
+                    //Console.WriteLine("Attempted movement out of bounds");
                     throw new Exception("Error: Movement out of range");
                 }
             }
