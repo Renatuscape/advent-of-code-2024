@@ -76,7 +76,8 @@
             public static List<string> operators = new()
             {
                 "*",
-                "+"
+                "+",
+                "||"
             };
 
             public static List<List<string>> GenerateOperatorCombinations(int length)
@@ -128,6 +129,10 @@
                 {
                     return Multiply(x, y);
                 }
+                else if (mathOperator == "||")
+                {
+                    return Concatenate(x, y);
+                }
                 else
                 {
                     return Add(x, y);
@@ -144,6 +149,11 @@
             {
                 //Console.WriteLine("\tAdding " + x + " + " + y + " = " + (x + y));
                 return x + y;
+            }
+
+            static long Concatenate(long x, long y)
+            {
+                return long.Parse(x.ToString() + y.ToString());
             }
         }
     }
