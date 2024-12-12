@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using static AoC_24_8.Program;
 
 namespace AoC_24_8
 {
@@ -28,7 +29,8 @@ namespace AoC_24_8
 
             Controller.PrintMap();
             Controller.MapAntennae(true);
-            Controller.MapAntinodes(true);
+            Controller.MapAntinodesPart1(true);
+            Controller.MapAntinodesPart2(true);
         }
 
         public static class Controller
@@ -43,7 +45,7 @@ namespace AoC_24_8
                 {
                     foreach (var row in col)
                     {
-                        Console.Write(row.ToString());
+                        Console.Write(row.ToString() + " ");
                     }
                     Console.Write("\n");
                 }
@@ -60,18 +62,22 @@ namespace AoC_24_8
 
                         if (antinode != null)
                         {
-                            if (overwriteAntennae)
+                            if (!overwriteAntennae && map[y][x] != '.')
                             {
-                                Console.Write("#");
+                                Console.Write(map[y][x].ToString() + " ");
+                            }
+                            else if (overwriteAntennae && map[y][x] != '.')
+                            {
+                                Console.Write("#_");
                             }
                             else
                             {
-                                Console.Write(map[y][x].ToString());
+                                Console.Write("# ");
                             }
                         }
                         else
                         {
-                            Console.Write(map[y][x].ToString());
+                            Console.Write(map[y][x].ToString() + " ");
                         }
                     }
                     Console.Write("\n");
@@ -103,7 +109,7 @@ namespace AoC_24_8
                 }
             }
 
-            public static void MapAntinodes(bool printMap = false)
+            public static void MapAntinodesPart1(bool printMap = false)
             {
                 antinodes.Clear();
 
@@ -133,10 +139,54 @@ namespace AoC_24_8
 
                 if (printMap)
                 {
+                    PrintMapWithAntinodes(false);
+                }
+
+                Console.WriteLine("Total antinodes: " + antinodes.Count);
+            }
+
+
+            public static void MapAntinodesPart2(bool printMap = false)
+            {
+                antinodes.Clear();
+                Console.WriteLine("\nANTINODES PART 2");
+
+                foreach (var antenna in antennae)
+                {
+                    foreach (var otherAntenna in antennae)
+                    {
+                        if (antenna.frequency == otherAntenna.frequency && antenna != otherAntenna)
+                        {
+                            int x = otherAntenna.x + (otherAntenna.x - antenna.x);
+                            int y = otherAntenna.y + (otherAntenna.y - antenna.y);
+
+                            AddAntinode(antenna.x, antenna.y);
+
+                            while (y >= 0 && y < map.Count && x >= 0 && x < map[y].Count)
+                            {
+                                AddAntinode(x, y);
+
+                                x += otherAntenna.x - antenna.x;
+                                y += otherAntenna.y - antenna.y;
+                            }
+                        }
+                    }
+                }
+
+                if (printMap)
+                {
                     PrintMapWithAntinodes(true);
                 }
 
-                Console.WriteLine("\nTOTAL ANTINODES: " + antinodes.Count);
+                Console.WriteLine("Total antinodes: " + antinodes.Count);
+            }
+
+            public static void AddAntinode(int x, int y)
+            {
+                if (antinodes.FirstOrDefault(a => x == a.x && y == a.y) == null)
+                {
+                    antinodes.Add(new() { x = x, y = y });
+                }
             }
         }
     }
