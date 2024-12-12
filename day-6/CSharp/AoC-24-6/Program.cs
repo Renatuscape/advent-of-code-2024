@@ -28,7 +28,7 @@ namespace AoC_24_6
         {
             string[] input = File.ReadAllLines("input-aoc-24-6.txt");
 
-            bool enableAnimation = false;
+            bool enableAnimation = true;
             bool delay = true;
 
             foreach (var line in input)
