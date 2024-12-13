@@ -1,13 +1,12 @@
-﻿using System.Text;
-
-namespace AoC_24_9
+﻿namespace AoC_24_9
 {
     internal class Program
     {
         static void Main(string[] args)
         {
             string input = File.ReadAllText("input-aoc-24-9.txt");
-            AmphipodComputer.ObjectifyDisk(input);
+            AmphipodComputer.MapDisk(input);
+            Console.WriteLine("DISK INPUT:  " + input);
             Console.WriteLine("DISK MAPPED: " + AmphipodComputer.diskMap + "\n");
             AmphipodComputer.SortDisk();
             Console.WriteLine("\nDISK SORTED: " + AmphipodComputer.diskMap.ToString());
@@ -15,17 +14,18 @@ namespace AoC_24_9
             Console.WriteLine($"\nInput length: {input.Length}\n" +
                 $"Disk map length: {AmphipodComputer.diskMap.Length}");
 
-            Console.WriteLine("\nFINAL CHECKSUM: " + AmphipodComputer.CalculateCheckSum());
+            //AmphipodComputer.CalculateCheckSum();
+            Console.WriteLine("\nFINAL CHECKSUM: " + AmphipodComputer.checkSum);//AmphipodComputer.CalculateCheckSum());
         }
     }
 
     public static class AmphipodComputer
     {
         public static string diskMap = "";
+        public static long checkSum = 0;
 
-        public static void ObjectifyDisk(string input)
+        public static void MapDisk(string input)
         {
-            Console.WriteLine("Objectifying disk: " + input);
             int id = 0;
 
             for (int i = 0; i < input.Length; i += 2)
@@ -35,6 +35,8 @@ namespace AoC_24_9
                     diskMap += id;
                 }
 
+                // CALCULATE CHECKSUM HERE??
+                checkSum += id * 
                 id++;
 
                 if (i + 1 < input.Length - 1)
@@ -64,7 +66,7 @@ namespace AoC_24_9
                             diskArray[i] = diskArray[j];
                             diskArray[j] = '.';
 
-                            //Console.WriteLine(new string(diskArray));
+                            Console.WriteLine(new string(diskArray));
                             break;
                         }
                     }
@@ -74,9 +76,9 @@ namespace AoC_24_9
             diskMap = new string(diskArray);
         }
 
-        public static long CalculateCheckSum()
+        public static void CalculateCheckSum()
         {
-            long sum = 0;
+            checkSum = 0;
 
             // Iterate through the entire diskMap
             for (int i = 0; i < diskMap.Length; i++)
@@ -86,14 +88,12 @@ namespace AoC_24_9
                 {
                     // Multiply the current position by the file ID
                     long id = diskMap[i] - '0';
-                    long toAdd = (long)i * id;
-                    sum += toAdd;
+                    long toAdd = i * id;
+                    checkSum += toAdd;
 
-                    //Console.WriteLine($"Position {i}: ID {id}, Contribution {toAdd}, Running Sum {sum}");
+                    Console.WriteLine($"Sum {checkSum} + ({i} * {id} = {toAdd})");
                 }
             }
-
-            return sum;
         }
     }
 }
