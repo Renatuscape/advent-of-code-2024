@@ -6,133 +6,94 @@ namespace AoC_24_9
     {
         static void Main(string[] args)
         {
-            string input = File.ReadAllText("input-aoc-24-8.txt");
-            //Console.WriteLine(input + "\n");
+            string input = File.ReadAllText("input-aoc-24-9.txt");
             AmphipodComputer.ObjectifyDisk(input);
-            AmphipodComputer.MapDisk();
+            Console.WriteLine("DISK MAPPED: " + AmphipodComputer.diskMap + "\n");
             AmphipodComputer.SortDisk();
-            Console.WriteLine(AmphipodComputer.diskMap.ToString());
+            Console.WriteLine("\nDISK SORTED: " + AmphipodComputer.diskMap.ToString());
+
+            Console.WriteLine($"\nInput length: {input.Length}\n" +
+                $"Disk map length: {AmphipodComputer.diskMap.Length}");
+
+            Console.WriteLine("\nFINAL CHECKSUM: " + AmphipodComputer.CalculateCheckSum());
         }
     }
 
     public static class AmphipodComputer
     {
-        public static List<MemoryBlock> memoryObjects = new();
-        public static List<MemoryBlock> sortedMemoryObjects = new();
-        public static StringBuilder diskMap = new();
+        public static string diskMap = "";
 
         public static void ObjectifyDisk(string input)
         {
-            memoryObjects.Clear();
-
+            Console.WriteLine("Objectifying disk: " + input);
             int id = 0;
 
             for (int i = 0; i < input.Length; i += 2)
             {
-                MemoryBlock file = new() { id = id, size = int.Parse(input[i].ToString()) };
-                memoryObjects.Add(file);
+                for (int j = 0; j < input[i] - '0'; j++)
+                {
+                    diskMap += id;
+                }
+
                 id++;
 
                 if (i + 1 < input.Length - 1)
                 {
-                    MemoryBlock space = new() { id = -1, size = int.Parse(input[i + 1].ToString()) };
-                    memoryObjects.Add(space);
-
-                }
-            }
-
-            foreach (MemoryBlock file in memoryObjects)
-            {
-                Console.Write(file.size);
-            }
-            Console.WriteLine();
-        }
-
-        public static StringBuilder MapDisk()
-        {
-            diskMap.Clear();
-
-            foreach (MemoryBlock file in memoryObjects)
-            {
-                if (file.id < 0)
-                {
-                    for (int i = 0; i < file.size; i++)
+                    for (int j = 0; j < input[i +1] - '0'; j++)
                     {
-
-                        diskMap.Append(".");
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < file.size; i++)
-                    {
-
-                        diskMap.Append(file.id);
+                        diskMap += ".";
                     }
                 }
             }
-
-            return diskMap;
         }
 
         public static void SortDisk()
         {
-            int filesToMove = 0;
+            char[] diskArray = diskMap.ToCharArray();
 
-            foreach (var file in diskMap.ToString())
+            for (int i = 0; i < diskArray.Length; i++)
             {
-                if (file != '.')
+                if (diskArray[i] == '.')
                 {
-                    filesToMove++;
-                }
-            }
-
-            for (int i = 0; i < filesToMove; i++)
-            {
-                if (diskMap[i] == '.')
-                {
-                    int spaceIndex = i;
-                    int fileIndex = -1;
-
-                    for (int j = diskMap.Length -1; j > 0; j--)
+                    // Find the rightmost non-period character
+                    for (int j = diskArray.Length - 1; j > i; j--)
                     {
-                        if (diskMap[j] != '.')
+                        if (diskArray[j] != '.')
                         {
-                            fileIndex = j;
+                            // Swap the first period with the rightmost non-period
+                            diskArray[i] = diskArray[j];
+                            diskArray[j] = '.';
+
+                            //Console.WriteLine(new string(diskArray));
                             break;
                         }
                     }
-
-                    if (fileIndex >= 0)
-                    {
-                        string file = diskMap[fileIndex].ToString();
-                        diskMap.Append('.');
-                        diskMap.Remove(fileIndex, 1);
-                        diskMap.Remove(spaceIndex, 1);
-                        diskMap.Insert(spaceIndex, file);
-                        //Console.WriteLine(diskMap.ToString());
-                    }
                 }
             }
+
+            diskMap = new string(diskArray);
         }
 
-        public static int CalculateCheckSum()
+        public static long CalculateCheckSum()
         {
-            string diskMapString = diskMap.ToString();
-            int sum = 0;
+            long sum = 0;
 
-            for (int i = 0; i < diskMapString.Length; i++)
+            // Iterate through the entire diskMap
+            for (int i = 0; i < diskMap.Length; i++)
             {
+                // Only calculate for non-period characters
+                if (diskMap[i] != '.')
+                {
+                    // Multiply the current position by the file ID
+                    long id = diskMap[i] - '0';
+                    long toAdd = (long)i * id;
+                    sum += toAdd;
 
+                    //Console.WriteLine($"Position {i}: ID {id}, Contribution {toAdd}, Running Sum {sum}");
+                }
             }
 
             return sum;
         }
-    }
-
-    public class MemoryBlock
-    {
-        public int id;
-        public int size;
     }
 }
