@@ -1,97 +1,70 @@
-﻿namespace AoC_24_9
+﻿using System.Text;
+
+namespace AoC_24_9
 {
     internal class Program
     {
         static void Main(string[] args)
         {
             string input = File.ReadAllText("input-aoc-24-9.txt");
-            AmphipodComputer.MapDisk(input);
-            Console.WriteLine("DISK INPUT:  " + input);
-            Console.WriteLine("DISK MAPPED: " + AmphipodComputer.diskMap + "\n");
-            AmphipodComputer.SortDisk();
-            Console.WriteLine("\nDISK SORTED: " + AmphipodComputer.diskMap.ToString());
-
-            Console.WriteLine($"\nInput length: {input.Length}\n" +
-                $"Disk map length: {AmphipodComputer.diskMap.Length}");
-
-            AmphipodComputer.CalculateCheckSum();
-            Console.WriteLine("\nFINAL CHECKSUM: " + AmphipodComputer.checkSum);//AmphipodComputer.CalculateCheckSum());
+            Console.WriteLine("Part 1 Checksum: " + SolvePart1(input).ToString());
         }
-    }
 
-    public static class AmphipodComputer
-    {
-        public static string diskMap = "";
-        public static long checkSum = 0;
-
-        public static void MapDisk(string input)
+        public static long SolvePart1(string input)
         {
-            int id = 0;
+            int[] nums = input.ToCharArray().Select(c => c - '0').ToArray();
+            long checkSum = 0L;
+            int fileOrder = 0; // 'ID' as described in task. Is set depending on the order in which it appears before moving
+            int leftIndex = 0; // Iterator which starts from the left
+            int rightIndex = nums.Length - 1; // Iterator which starts from the right
 
-            for (int i = 0; i < input.Length; i += 2)
+            while (true)
             {
-                for (int j = 0; j < input[i] - '0'; j++)
+                if (leftIndex % 2 == 0) // Execute if index represents empty space
                 {
-                    diskMap += id;
-                }
+                    checkSum += UpdateFileCheckSum(nums[leftIndex], leftIndex / 2, ref fileOrder); // Update CheckSum
+                    nums[leftIndex] = 0; // Change processed number to 0
 
-                id++;
-
-                if (i + 1 < input.Length - 1)
-                {
-                    for (int j = 0; j < input[i +1] - '0'; j++)
+                    if (leftIndex >= rightIndex) // Once left iterator meets right iterator, break the loop
                     {
-                        diskMap += ".";
+                        break;
+                    }
+
+                    leftIndex += 1; // Increase index
+                }
+                else // Executes if index represents a file
+                {
+                    if (leftIndex >= rightIndex)
+                    {
+                        checkSum += (nums[rightIndex] + 1) * nums[rightIndex] / 2;
+                        break;
+                    }
+                    int m = Math.Min(nums[leftIndex], nums[rightIndex]);
+                    checkSum += UpdateFileCheckSum(m, rightIndex / 2, ref fileOrder);
+                    nums[leftIndex] -= m;
+                    nums[rightIndex] -= m;
+
+                    if (nums[leftIndex] == 0) // Skip processed or empty file
+                    {
+                        leftIndex += 1;
+                    }
+
+                    if (nums[rightIndex] == 0) // Skip free space block with no free space
+                    {
+                        rightIndex -= 2;
                     }
                 }
+
+                //Console.WriteLine(string.Join("", nums));
             }
+            return checkSum;
         }
 
-        public static void SortDisk()
+        private static long UpdateFileCheckSum(int fileID, long value, ref int fileOrder)
         {
-            char[] diskArray = diskMap.ToCharArray();
-
-            for (int i = 0; i < diskArray.Length; i++)
-            {
-                if (diskArray[i] == '.')
-                {
-                    // Find the rightmost non-period character
-                    for (int j = diskArray.Length - 1; j > i; j--)
-                    {
-                        if (diskArray[j] != '.')
-                        {
-                            // Swap the first period with the rightmost non-period
-                            diskArray[i] = diskArray[j];
-                            diskArray[j] = '.';
-
-                            Console.WriteLine(new string(diskArray));
-                            break;
-                        }
-                    }
-                }
-            }
-
-            diskMap = new string(diskArray);
-        }
-
-        public static void CalculateCheckSum()
-        {
-            checkSum = 0;
-
-            // Iterate through the entire diskMap
-            for (int i = 0; i < diskMap.Length; i++)
-            {
-                // Only calculate for non-period characters
-                if (diskMap[i] != '.')
-                {
-                    // Multiply the current position by the file ID
-                    long id = diskMap[i] - '0';
-                    long toAdd = i * id;
-                    checkSum += toAdd;
-
-                    Console.WriteLine($"Sum {checkSum} + ({i} * {id} = {toAdd})");
-                }
-            }
+            long newCheckSum = (fileID - 1 + 2 * fileOrder) * fileID / 2 * value;
+            fileOrder += fileID;
+            return newCheckSum;
         }
     }
 }
