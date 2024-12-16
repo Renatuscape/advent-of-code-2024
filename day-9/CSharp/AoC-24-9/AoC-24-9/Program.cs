@@ -14,7 +14,7 @@
             Console.WriteLine($"\nInput length: {input.Length}\n" +
                 $"Disk map length: {AmphipodComputer.diskMap.Length}");
 
-            //AmphipodComputer.CalculateCheckSum();
+            AmphipodComputer.CalculateCheckSum();
             Console.WriteLine("\nFINAL CHECKSUM: " + AmphipodComputer.checkSum);//AmphipodComputer.CalculateCheckSum());
         }
     }
@@ -35,8 +35,6 @@
                     diskMap += id;
                 }
 
-                // CALCULATE CHECKSUM HERE??
-                checkSum += id * 
                 id++;
 
                 if (i + 1 < input.Length - 1)
