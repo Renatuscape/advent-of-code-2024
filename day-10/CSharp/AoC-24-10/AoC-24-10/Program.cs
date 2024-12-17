@@ -31,7 +31,8 @@ namespace AoC_24_10
             }
             Console.WriteLine();
 
-            SolvePart1(MapArchive.originalMap);
+            Console.WriteLine("Score equals: " + SolvePart1(MapArchive.originalMap));
+            Console.WriteLine("Goal was: " + (useExampleInput ? "36" : "???"));
         }
 
         public static class MapArchive
@@ -41,15 +42,7 @@ namespace AoC_24_10
 
         public static long SolvePart1(List<List<int>> map)
         {
-            // Hiking trail must be as long as possible and have an even, gradual, uphill slope
-            // A hiking trail starts at 0 and ends at 9
-            // Always increases by exaqctly 1 at each step
-            // No diagonal steps, only up, down, left, right (map pespective)
-
-            // Trailhead: any position that starts one or more hiking trails, always height 0
-            // Trailhead score: the number of 9-height positions that are reachable from the trailhead
-
-            long score = 0L;
+            // FIND ALL TRAILHEADS
             List<Trailhead> trailheads = new();
 
             for (int col = 0; col < map.Count; col++)
@@ -64,25 +57,32 @@ namespace AoC_24_10
             }
 
             Console.WriteLine("TRAILHEADS");
-
+            List<Trail> foundTrails = new();
+            //GET ALL TRAILS FROM TRAILHEADS
             foreach (Trailhead trailhead in trailheads)
             {
-                List<List<int>> mapCopy = new();
+                var trails = trailhead.GetAllTrails();
+                foundTrails.AddRange(trails);
 
-                foreach (var line in map)
+                Console.WriteLine($"\nTotal of {trails.Count} trails found for trailhead {trailhead.startingCoordinates}:");
+
+                foreach (var trail in trails)
                 {
-                    mapCopy.Add(line.Select(c => int.Parse(c.ToString())).ToList());
+                    Console.Write("\n");
+                    foreach (var step in trail.Steps)
+                    {
+                        Console.Write(step.coordinates + $" E{step.elevation}  ");
+                    }
                 }
-
-                FindTrail(trailhead, mapCopy);
+                Console.Write("\n\n");
             }
 
-            return score;
+            return foundTrails.Count;
         }
 
         public static void PrintMap(List<List<int>> map, int delay = 0)
         {
-            Thread.Sleep(delay); 
+            Thread.Sleep(delay);
             Console.Write("\n");
             foreach (var line in map)
             {
@@ -102,107 +102,150 @@ namespace AoC_24_10
             Console.Write("\n");
         }
 
-        public static void FindAllTrails(Trailhead trailhead, List<List<int>> map)
+        public static List<Trail> FindAllTrails(Trailhead trailhead)
         {
-            int desiredElevation = 1;
-        }
-
-        public static void FindTrail(Trailhead trailhead, List<List<int>> map)
-        {
-            Console.WriteLine("\nSTARTING NEW TRAILFINDER\nAttempting to find trail for " + trailhead.startingCoordinates);
-            (int x, int y) curCoords = trailhead.startingCoordinates;
-            Trail newTrail = new();
-            TrailStep firstStep = new TrailStep() { elevation = 0, coordinates = curCoords };
-            newTrail.Steps.Add(firstStep);
-
-            bool pathBlocked = false;
-            bool trailFound = false;
-            int desiredElevation = 1;
-
-            while (!pathBlocked)
+            List<Trail> foundTrails = new List<Trail>()  // Index will equal elevation
             {
-                Console.WriteLine("Attempting to find next step");
-                pathBlocked = !FindNextStep(); // If next step was found, path is not blocked.
-                PrintMap(map);
+                CreateNewTrail(trailhead.startingCoordinates)
+            };
 
-                if (trailFound)
+            List<Trail> newTrails = new();
+            List<Trail> deadEndTrails = new();
+
+            int desiredElevation = 1;
+
+            while (desiredElevation <= 9)
+            {
+                foreach (Trail trail in foundTrails)
                 {
-                    var addTrail = trailhead.AddTrail(newTrail);
+                    Console.WriteLine("\n------------------------------" +
+                        "\nSEARCHING AT ELEVATION " + desiredElevation);
+                    (int x, int y) curCoords = trail.Steps[desiredElevation - 1].coordinates;
+                    List<(int x, int y)> searchArea = GetViableCoordinates(curCoords, desiredElevation);
 
-                    if (addTrail)
+                    Console.WriteLine("Search area found with starting coordinates " + curCoords + ": ");
+                    foreach (var coord in searchArea)
                     {
-                        Console.WriteLine("Successfully added trail: ");
-                        foreach (var step in newTrail.Steps)
+                        Console.Write(coord + " ");
+                    }
+                    Console.Write("\n");
+
+                    if (searchArea.Count == 1) // One new step was found. Expand existing trail
+                    {
+                        Console.WriteLine("Found one step for elevation " + desiredElevation);
+                        trail.AddStep(desiredElevation, searchArea[0]);
+                    }
+                    else if (searchArea.Count > 1) // More than one step was found. Expand trail and add copies with new steps
+                    {
+                        Console.WriteLine($"Found {searchArea.Count} steps for elevation " + desiredElevation);
+
+                        for (int i = 1; i < searchArea.Count; i++)// Create new trail for each coordinate
                         {
-                            Console.Write("(" + step.coordinates.y.ToString() + "," + step.coordinates.x.ToString() + " e" + MapArchive.originalMap[step.coordinates.y][step.coordinates.x] + ") ");
+                            Console.WriteLine("Adding new trail for new step " + searchArea[i]);
+                            Trail newTrail = new Trail();
+
+                            // Deep copy ALL existing steps from the original trail
+                            foreach (var step in trail.Steps)
+                            {
+                                newTrail.Steps.Add(new TrailStep
+                                {
+                                    coordinates = step.coordinates,
+                                    elevation = step.elevation
+                                });
+                            }
+
+                            // Add the new step at the current elevation
+                            newTrail.AddStep(desiredElevation, searchArea[i]);
+
+                            newTrails.Add(newTrail);
                         }
+
+                        trail.AddStep(desiredElevation, searchArea[0]);
                     }
                     else
                     {
-                        Console.WriteLine("Trail already exists");
+                        deadEndTrails.Add(trail);
+                        Console.WriteLine("NO VIABLE NEXT STEP found for elevation " + desiredElevation);
                     }
-                    break;
                 }
 
-                if (pathBlocked)
+                // Remove dead ends
+                foreach (Trail deadEnd in deadEndTrails)
                 {
-                    Console.WriteLine("Path was blocked.");
+                    Console.WriteLine("Removing dead end: " + deadEnd.PrintSteps());
+                    foundTrails.Remove(deadEnd);
                 }
+                deadEndTrails.Clear();
+
+                foreach (Trail newTrail in newTrails)
+                {
+                    Console.WriteLine("Adding new trail: " + newTrail.PrintSteps());
+                    foundTrails.Add(newTrail);
+                }
+                newTrails.Clear();
+
+                // Increase elevation
+                desiredElevation++;
             }
 
-            bool FindNextStep()
+            return foundTrails;
+        }
+
+        public static Trail CreateNewTrail((int x, int y) startingCoords)
+        {
+            Trail newTrail = new();
+            TrailStep firstStep = new TrailStep() { elevation = 0, coordinates = startingCoords };
+            newTrail.Steps.Add(firstStep);
+
+            return newTrail;
+        }
+
+        public static List<(int x, int y)> GetViableCoordinates((int x, int y) curCoords, int desiredElevation)
+        {
+            var searchArea = GetSearchArea(curCoords, MapArchive.originalMap.Count, MapArchive.originalMap[0].Count);
+            var filteredArea = FilterSearchAreaForElevation(searchArea, desiredElevation);
+            Console.WriteLine($"FILTERED SEARCH AREA: {string.Join(" ", filteredArea)} e{desiredElevation}");
+            return filteredArea;
+        }
+
+        public static List<(int x, int y)> FilterSearchAreaForElevation(List<(int x, int y)> searchArea, int desiredElevation)
+        {
+            List<(int x, int y)> validCoords = new();
+            foreach (var coords in searchArea)
             {
-                var searchArea = GetSearchArea(curCoords, map.Count, map[0].Count);
-                map[curCoords.y][curCoords.x] = -1;
+                Console.WriteLine($"Checking coordinates: {coords}, Desired Elevation: {desiredElevation}");
 
-                for (int i = 0; i < searchArea.Count; i++)
+                if (coords.y >= 0 &&
+                    coords.y < MapArchive.originalMap.Count &&
+                    coords.x >= 0 &&
+                    coords.x < MapArchive.originalMap[0].Count)
                 {
-                    var coords = searchArea[i];
+                    int actualElevation = MapArchive.originalMap[coords.y][coords.x];
+                    Console.WriteLine($"Actual Elevation at {coords}: {actualElevation}");
 
-                    if (map[coords.y][coords.x] == desiredElevation)
+                    if (actualElevation == desiredElevation)
                     {
-                        Console.WriteLine($"Found step: {coords}");
-                        curCoords = coords;
-                        newTrail.AddStep(desiredElevation, coords);
-                        desiredElevation++;
-
-                        if (map[coords.y][coords.x] >= 9)
-                        {
-                            Console.WriteLine("Found FINAL step.");
-                            trailFound = true;
-                            break;
-                        }
-
-                        return true;
+                        validCoords.Add(coords);
+                        Console.WriteLine($"Valid coordinate added: {coords}");
                     }
                 }
-
-                Console.WriteLine("Could not find a next step");
-                return false;
+                else
+                {
+                    Console.WriteLine($"Coordinate {coords} out of bounds");
+                }
             }
+            return validCoords;
         }
 
         public static List<(int x, int y)> GetSearchArea((int x, int y) curCoords, int maxY, int maxX)
         {
-            List<(int x, int y)> searchArea = new List<(int x, int y)>();
-            List<(int x, int y)> potentialCoordinates = new()
+            return new()
                 {
                     (curCoords.x, curCoords.y - 1), // North
                     (curCoords.x, curCoords.y + 1), // South
                     (curCoords.x + 1, curCoords.y), // East
                     (curCoords.x - 1, curCoords.y), // West
                 };
-
-            // Filter out invalid coordinates
-            foreach (var coords in potentialCoordinates)
-            {
-                if (coords.y < maxY && coords.y > -1 && coords.x < maxX && coords.x > -1)
-                {
-                    searchArea.Add(coords);
-                }
-            }
-
-            return searchArea;
         }
 
         public class Trailhead
@@ -215,6 +258,11 @@ namespace AoC_24_10
                 Trails.Add(incomingTrail);
                 return true;
             }
+
+            public List<Trail> GetAllTrails()
+            {
+                return FindAllTrails(this);
+            }
         }
 
         public class Trail
@@ -224,6 +272,11 @@ namespace AoC_24_10
             public void AddStep(int elevation, (int x, int y) coordinates)
             {
                 Steps.Add(new() { coordinates = coordinates, elevation = elevation });
+            }
+
+            public string PrintSteps()
+            {
+                return string.Join(" ", Steps.Select(step => $"{step.coordinates}"));
             }
         }
 
