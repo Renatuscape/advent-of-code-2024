@@ -80,9 +80,9 @@ namespace AoC_24_10
             return score;
         }
 
-        public static void PrintMap(List<List<int>> map)
+        public static void PrintMap(List<List<int>> map, int delay = 0)
         {
-            Thread.Sleep(500); 
+            Thread.Sleep(delay); 
             Console.Write("\n");
             foreach (var line in map)
             {
@@ -102,14 +102,18 @@ namespace AoC_24_10
             Console.Write("\n");
         }
 
+        public static void FindAllTrails(Trailhead trailhead, List<List<int>> map)
+        {
+            int desiredElevation = 1;
+        }
+
         public static void FindTrail(Trailhead trailhead, List<List<int>> map)
         {
             Console.WriteLine("\nSTARTING NEW TRAILFINDER\nAttempting to find trail for " + trailhead.startingCoordinates);
             (int x, int y) curCoords = trailhead.startingCoordinates;
-            List<(int x, int y)> newTrail = new()
-            {
-                trailhead.startingCoordinates
-            };
+            Trail newTrail = new();
+            TrailStep firstStep = new TrailStep() { elevation = 0, coordinates = curCoords };
+            newTrail.Steps.Add(firstStep);
 
             bool pathBlocked = false;
             bool trailFound = false;
@@ -128,9 +132,9 @@ namespace AoC_24_10
                     if (addTrail)
                     {
                         Console.WriteLine("Successfully added trail: ");
-                        foreach (var coords in newTrail)
+                        foreach (var step in newTrail.Steps)
                         {
-                            Console.Write("(" + coords.y.ToString() + "," + coords.x.ToString() + " e" + MapArchive.originalMap[coords.y][coords.x] + ") ");
+                            Console.Write("(" + step.coordinates.y.ToString() + "," + step.coordinates.x.ToString() + " e" + MapArchive.originalMap[step.coordinates.y][step.coordinates.x] + ") ");
                         }
                     }
                     else
@@ -159,7 +163,7 @@ namespace AoC_24_10
                     {
                         Console.WriteLine($"Found step: {coords}");
                         curCoords = coords;
-                        newTrail.Add(coords);
+                        newTrail.AddStep(desiredElevation, coords);
                         desiredElevation++;
 
                         if (map[coords.y][coords.x] >= 9)
@@ -204,33 +208,29 @@ namespace AoC_24_10
         public class Trailhead
         {
             public (int x, int y) startingCoordinates;
-            public List<List<(int x, int y)>> Trails { get; private set; } = new(); // Value tuple
+            public List<Trail> Trails { get; private set; } = new(); // Value tuple
 
-            public bool AddTrail(List<(int x, int y)> incomingTrail)
+            public bool AddTrail(Trail incomingTrail)
             {
-                //// Ensure that trail does not already exist before adding
-                //foreach (List<(int x, int y)> existingTrail in Trails)
-                //{
-                //    int matches = 0;
-
-                //    for (int i = 0; i < incomingTrail.Count; i++)
-                //    {
-                //        if (i < existingTrail.Count && existingTrail[i] == incomingTrail[i])
-                //        {
-                //            matches++;
-                //        }
-                //    }
-
-                //    if (matches == incomingTrail.Count)
-                //    {
-                //        // Every coordinate matched. Traila lready exists
-                //        return false;
-                //    }
-                //}
-
                 Trails.Add(incomingTrail);
                 return true;
             }
+        }
+
+        public class Trail
+        {
+            public List<TrailStep> Steps { get; private set; } = new();
+
+            public void AddStep(int elevation, (int x, int y) coordinates)
+            {
+                Steps.Add(new() { coordinates = coordinates, elevation = elevation });
+            }
+        }
+
+        public class TrailStep
+        {
+            public int elevation;
+            public (int x, int y) coordinates;
         }
     }
 }
