@@ -82,7 +82,7 @@ namespace AoC_24_10
 
         public static void PrintMap(List<List<int>> map)
         {
-            Thread.Sleep(400);
+            Thread.Sleep(500); 
             Console.Write("\n");
             foreach (var line in map)
             {
@@ -117,7 +117,8 @@ namespace AoC_24_10
 
             while (!pathBlocked)
             {
-                pathBlocked = FindNextStep();
+                Console.WriteLine("Attempting to find next step");
+                pathBlocked = !FindNextStep(); // If next step was found, path is not blocked.
                 PrintMap(map);
 
                 if (trailFound)
@@ -147,48 +148,57 @@ namespace AoC_24_10
 
             bool FindNextStep()
             {
-                var searchArea = GetSearchArea(curCoords);
+                var searchArea = GetSearchArea(curCoords, map.Count, map[0].Count);
                 map[curCoords.y][curCoords.x] = -1;
 
                 for (int i = 0; i < searchArea.Count; i++)
                 {
                     var coords = searchArea[i];
 
-                    if (coords.x >= 0
-                        && coords.y >= 0
-                        && coords.y < map.Count
-                        && coords.x < map[0].Count) // If coords are within bounds
+                    if (map[coords.y][coords.x] == desiredElevation)
                     {
+                        Console.WriteLine($"Found step: {coords}");
+                        curCoords = coords;
+                        newTrail.Add(coords);
+                        desiredElevation++;
 
-                        if (map[coords.y][coords.x] == desiredElevation)
+                        if (map[coords.y][coords.x] >= 9)
                         {
-                            //Console.WriteLine($"Found step: {coords}");
-                            curCoords = coords;
-                            newTrail.Add(coords);
-                            desiredElevation++;
-
-                            if (map[coords.y][coords.x] >= 9)
-                            {
-                                //Console.WriteLine("Found FINAL step.");
-                                trailFound = true;
-                                break;
-                            }
+                            Console.WriteLine("Found FINAL step.");
+                            trailFound = true;
+                            break;
                         }
+
+                        return true;
                     }
                 }
+
+                Console.WriteLine("Could not find a next step");
                 return false;
             }
+        }
 
-            List<(int x, int y)> GetSearchArea((int x, int y) curCoords)
-            {
-                return new List<(int x, int y)>()
+        public static List<(int x, int y)> GetSearchArea((int x, int y) curCoords, int maxY, int maxX)
+        {
+            List<(int x, int y)> searchArea = new List<(int x, int y)>();
+            List<(int x, int y)> potentialCoordinates = new()
                 {
                     (curCoords.x, curCoords.y - 1), // North
                     (curCoords.x, curCoords.y + 1), // South
                     (curCoords.x + 1, curCoords.y), // East
                     (curCoords.x - 1, curCoords.y), // West
                 };
+
+            // Filter out invalid coordinates
+            foreach (var coords in potentialCoordinates)
+            {
+                if (coords.y < maxY && coords.y > -1 && coords.x < maxX && coords.x > -1)
+                {
+                    searchArea.Add(coords);
+                }
             }
+
+            return searchArea;
         }
 
         public class Trailhead
