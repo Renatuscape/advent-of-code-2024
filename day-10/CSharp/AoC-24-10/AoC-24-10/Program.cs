@@ -57,23 +57,35 @@ namespace AoC_24_10
                 }
             }
 
-            List<Trail> foundTrails = new();
+            Console.WriteLine("Found trailheads: " + trailheads.Count);
+
             //GET ALL TRAILS FROM TRAILHEADS
+            List<Trail> foundTrails = new();
+
             foreach (Trailhead trailhead in trailheads)
             {
                 var trails = trailhead.GetAllTrails();
+                Console.WriteLine($"\n----------------------------------------------------------------" +
+                    $"\nTrailhead {trailhead.startingCoordinates} has {trails.Count} trails\n");
 
                 List<Trail> uniqueTrailEnds = new();
 
                 foreach (var trail in trails)
                 {
-                    if (uniqueTrailEnds.FirstOrDefault(t => t.Coordinates[9].x != trail.Coordinates[9].x && t.Coordinates[9].y != trail.Coordinates[9].y) == null)
+                    if (uniqueTrailEnds.FirstOrDefault(t => t.Coordinates[9].x == trail.Coordinates[9].x && t.Coordinates[9].y == trail.Coordinates[9].y) == null)
                     {
                         uniqueTrailEnds.Add(trail);
                     }
                 }
 
                 foundTrails.AddRange(uniqueTrailEnds);
+
+                foreach (var trail in trails)
+                {
+                    Console.WriteLine($"\t{trail.PrintSteps()}");
+                }
+
+                Console.WriteLine($"\n\tTrailhead {trailhead.startingCoordinates} has {uniqueTrailEnds.Count} unique trail ends.\n");
             }
 
 
@@ -120,12 +132,6 @@ namespace AoC_24_10
                 {
                     (int x, int y) curCoords = trail.Coordinates[desiredElevation - 1];
                     List<(int x, int y)> searchArea = GetViableCoordinates(curCoords, desiredElevation);
-
-                    foreach (var coord in searchArea)
-                    {
-                        Console.Write(coord + " ");
-                    }
-                    Console.Write("\n");
 
                     if (searchArea.Count == 1) // One new step was found. Expand existing trail
                     {
