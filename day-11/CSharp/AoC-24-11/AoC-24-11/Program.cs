@@ -2,21 +2,11 @@
 {
     internal class Program
     {
-        // RULES
-        // Every blink, each stone changes according to the first applicable rule:
-        // 0 becomes 1
-        // Even number digits becomes two stones with half of each number, not keeping leading zeroes (1000 = 10 0)
-        // If no other rule applies, stone's old number is multiplied by 2024
-
-        // Order is preserved and they stay in a perfectly straight line
-
         static void Main(string[] args)
         {
             bool useExampleInput = false;
             int blinks = 75;
-
             string input;
-
             if (useExampleInput)
             {
                 input = File.ReadAllText("example.txt");
@@ -27,59 +17,61 @@
             }
 
             // Use array instead of list for better performance
-            PlutonianRock[] rocks = input.Split(" ")
-                .Select(x => new PlutonianRock(long.Parse(x)))
+            long[] rocks = input.Split(" ")
+                .Select(long.Parse)
                 .ToArray();
 
             Console.WriteLine("Number of rocks: " + rocks.Length);
-            Console.WriteLine(string.Join(" ", rocks.Select(r => r.mark)) + "\n\n");
+            Console.WriteLine(string.Join(" ", rocks) + "\n\n");
 
             for (int i = 1; i <= blinks; i++)
             {
                 rocks = Blink(rocks);
+                // Uncomment for verbose output
                 Console.WriteLine("#" + i + " Blink");
             }
 
             Console.WriteLine("Number of rocks: " + rocks.Length);
         }
 
-        public static PlutonianRock[] Blink(PlutonianRock[] rocks)
+        public static long[] Blink(long[] rocks)
         {
-            //Console.WriteLine(string.Join(" ", rocks.Select(r => r.mark)));
-
-            // Pre-allocate a list to avoid multiple resizes
-            var newRocks = new List<PlutonianRock>(rocks.Length * 2);
+            // Pre-allocate maximum possible size to reduce reallocations
+            var newRocks = new long[rocks.Length * 2];
+            int newRocksCount = 0;
 
             foreach (var rock in rocks)
             {
-                if (rock.mark == 0)
+                if (rock == 0)
                 {
-                    newRocks.Add(new PlutonianRock(1));
+                    newRocks[newRocksCount++] = 1;
                 }
                 else
                 {
-                    string markStr = rock.mark.ToString();
-                    if (markStr.Length % 2 == 0)
+                    // Use mathematical approach instead of string conversion
+                    long currentRock = rock;
+                    int digitCount = currentRock == 0 ? 1 : (int)Math.Floor(Math.Log10(currentRock) + 1);
+
+                    if (digitCount % 2 == 0)
                     {
-                        int middleIndex = markStr.Length / 2;
+                        // Split into two parts
+                        long divisor = (long)Math.Pow(10, digitCount / 2);
+                        long leftMark = currentRock / divisor;
+                        long rightMark = currentRock % divisor;
 
-                        // Split exactly in half, removing leading zeros
-                        long leftMark = long.Parse(markStr.Substring(0, middleIndex));
-                        long rightMark = long.Parse(markStr.Substring(middleIndex));
-
-                        newRocks.Add(new PlutonianRock(leftMark));
-                        newRocks.Add(new PlutonianRock(rightMark));
+                        newRocks[newRocksCount++] = leftMark;
+                        newRocks[newRocksCount++] = rightMark;
                     }
                     else
                     {
-                        newRocks.Add(new PlutonianRock(rock.mark * 2024));
+                        // Multiply by 2024
+                        newRocks[newRocksCount++] = currentRock * 2024;
                     }
                 }
             }
 
-            return newRocks.ToArray();
+            // Create a new array with exactly the number of rocks
+            return newRocks[..newRocksCount];
         }
-
-        public record PlutonianRock(long mark);
     }
 }
