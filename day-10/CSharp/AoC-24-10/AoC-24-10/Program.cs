@@ -32,8 +32,9 @@ namespace AoC_24_10
             }
             Console.WriteLine();
 
-            Console.WriteLine("Score equals: " + SolvePart1(MapArchive.originalMap));
-            Console.WriteLine("Goal was: " + (useExampleInput ? "36" : "582"));
+            Solve(MapArchive.originalMap, out var day1, out var day2);
+            Console.WriteLine("Score Day 1: " + day1);
+            Console.WriteLine("Score Day 2: " + day2);
         }
 
         public static class MapArchive
@@ -41,7 +42,7 @@ namespace AoC_24_10
             public static List<List<int>> originalMap = new();
         }
 
-        public static long SolvePart1(List<List<int>> map)
+        public static void Solve(List<List<int>> map, out long day1, out long day2)
         {
             // FIND ALL TRAILHEADS
             List<Trailhead> trailheads = new();
@@ -60,11 +61,15 @@ namespace AoC_24_10
             Console.WriteLine("Found trailheads: " + trailheads.Count);
 
             //GET ALL TRAILS FROM TRAILHEADS
+            day1 = 0;
+            day2 = 0;
             List<Trail> foundTrails = new();
 
             foreach (Trailhead trailhead in trailheads)
             {
                 var trails = trailhead.GetAllTrails();
+                day2 += trails.Count();
+
                 Console.WriteLine($"\n----------------------------------------------------------------" +
                     $"\nTrailhead {trailhead.startingCoordinates} has {trails.Count} trails\n");
 
@@ -89,7 +94,7 @@ namespace AoC_24_10
             }
 
 
-            return foundTrails.Count;
+            day1 = foundTrails.Count;
         }
 
         public static void PrintMap(List<List<int>> map, int delay = 0)
