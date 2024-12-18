@@ -13,7 +13,7 @@
         static void Main(string[] args)
         {
             bool useExampleInput = false;
-            int blinks = 25;
+            int blinks = 75;
 
             string input;
 
@@ -26,67 +26,60 @@
                 input = File.ReadAllText("input.txt");
             }
 
-            List<PlutonianRock> rocks = new();
+            // Use array instead of list for better performance
+            PlutonianRock[] rocks = input.Split(" ")
+                .Select(x => new PlutonianRock(long.Parse(x)))
+                .ToArray();
 
-            foreach (var rock in input.Split(" "))
+            Console.WriteLine("Number of rocks: " + rocks.Length);
+            Console.WriteLine(string.Join(" ", rocks.Select(r => r.mark)) + "\n\n");
+
+            for (int i = 1; i <= blinks; i++)
             {
-                rocks.Add(new PlutonianRock() { mark = int.Parse(rock) });
+                rocks = Blink(rocks);
+                Console.WriteLine("#" + i + " Blink");
             }
 
-            Console.WriteLine("Number of rocks: " + rocks.Count);
-            Console.WriteLine(string.Join(" ", rocks.Select(r => r.mark)));
-
-            for (int i = 0; i < blinks; i++)
-            {
-                Blink(rocks);
-            }
-
-            Console.WriteLine("Number of rocks: " + rocks.Count);
-            //Console.WriteLine(string.Join(" ", rocks.Select(r => r.mark)));
+            Console.WriteLine("Number of rocks: " + rocks.Length);
         }
 
-        public static void Blink(List<PlutonianRock> rocks)
+        public static PlutonianRock[] Blink(PlutonianRock[] rocks)
         {
-            Dictionary<PlutonianRock, PlutonianRock> rockClones = new();
-            
             //Console.WriteLine(string.Join(" ", rocks.Select(r => r.mark)));
-            for (int i = 0; i < rocks.Count; i++)
-            {
-                var rock = rocks[i];
 
+            // Pre-allocate a list to avoid multiple resizes
+            var newRocks = new List<PlutonianRock>(rocks.Length * 2);
+
+            foreach (var rock in rocks)
+            {
                 if (rock.mark == 0)
                 {
-                    rock.mark = 1;
-                }
-                else if (rock.mark.ToString().Length % 2 == 0)
-                {
-                    char[] mark = rock.mark.ToString().ToCharArray();
-                    int middleIndex = mark.Length / 2;
-
-                    string leftMark = new string(mark.Take(middleIndex).ToArray());
-                    string rightMark = new string(mark.Skip(middleIndex).ToArray());
-
-                    //Console.WriteLine($"{leftMark} - {rightMark}");
-                    rock.mark = long.Parse(leftMark);
-                    PlutonianRock newRock = new() { mark = long.Parse(rightMark) };
-                    rockClones.Add(rock, newRock);
+                    newRocks.Add(new PlutonianRock(1));
                 }
                 else
                 {
-                    rock.mark *= 2024;
+                    string markStr = rock.mark.ToString();
+                    if (markStr.Length % 2 == 0)
+                    {
+                        int middleIndex = markStr.Length / 2;
+
+                        // Split exactly in half, removing leading zeros
+                        long leftMark = long.Parse(markStr.Substring(0, middleIndex));
+                        long rightMark = long.Parse(markStr.Substring(middleIndex));
+
+                        newRocks.Add(new PlutonianRock(leftMark));
+                        newRocks.Add(new PlutonianRock(rightMark));
+                    }
+                    else
+                    {
+                        newRocks.Add(new PlutonianRock(rock.mark * 2024));
+                    }
                 }
             }
 
-            foreach (var rockPair in rockClones)
-            {
-                int rockIndex = rocks.IndexOf(rockPair.Key) +1;
-                rocks.Insert(rockIndex, rockPair.Value);
-            }
+            return newRocks.ToArray();
         }
 
-        public class PlutonianRock
-        {
-            public long mark;
-        }
+        public record PlutonianRock(long mark);
     }
 }
