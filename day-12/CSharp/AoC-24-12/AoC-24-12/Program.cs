@@ -4,6 +4,11 @@ namespace AoC_24_12
 {
     internal class Program
     {
+        public static List<List<char>> map = new();
+        public static List<Region> regions = new();
+        public static List<Tile> tiles = new();
+        public static List<char> types = new();
+
         static void Main(string[] args)
         {
             bool useExampleInput = true;
@@ -17,20 +22,46 @@ namespace AoC_24_12
             {
                 input = File.ReadAllLines("input.txt");
             }
+            
+            ConstructMap(input);
+            GenerateTiles();
 
+            // Divide into regions
+            FindRegions();
 
-            // PART 1
-            List<List<char>> map = new();
-            List<(int x, int y)> usedCoords = new();
+            // Erect fencing in each region
+            foreach (var region in regions)
+            {
+                region.SetFencing();
+            }
 
+            //PrintRegionCells(regions[0]);
+            // Draw the regions for visualisation
+            //foreach (var region in regions)
+            //{
+            //    PrintRegionCells(region);
+            //}
+            PrintMapCells();
+
+            // Count up tiles and fences
+
+            foreach (var region in regions)
+            {
+
+            }
+        }
+
+        public static void ConstructMap(string[] input)
+        {
+            // Construct map
             foreach (var line in input)
             {
                 map.Add(line.ToCharArray().ToList());
             }
+        }
 
-            List<Region> regions = new() { new() { type = map[0][0] } };
-            List<Tile> tiles = new();
-
+        public static void GenerateTiles()
+        {
             // Generate tiles
             for (int y = 0; y < map.Count; y++)
             {
@@ -38,70 +69,60 @@ namespace AoC_24_12
                 {
                     Tile newTile = new() { type = map[y][x], coords = (x, y) };
                     tiles.Add(newTile);
+                    types.Add(newTile.type);
                 }
             }
+        }
+        public static void FindRegions()
+        {
+            types = types.Distinct().ToList();
+            HashSet<(int x, int y)> visitedCoordinates = new();
 
-            // Divide into regions
-            // TODO: Fix tile division. Currently does not catch all tiles belonging to the same region
-            // Split tiles based on type and sort types into regions based on whether they touch any tile in that region
             foreach (var tile in tiles)
             {
-                bool isAdded = false;
-                Console.WriteLine("\n" + new string('-', 30) + "\nChecking " + tile.ToString());
-                for (int r = 0; r < regions.Count; r++)
-                {
-                    if (regions[r].type == tile.type)
-                    {
-                        // Check if an adjacent tile exists
-                        var adjacentCoordinates = GetAdjacentCoordinates(tile);
+                // Skip if we've already processed this tile
+                if (visitedCoordinates.Contains(tile.coords))
+                    continue;
 
-                        for (int i = 0; i < adjacentCoordinates.Length; i++)
-                        {
-                            // Check if tile matches with tiles that have been added to region
-                            if (regions[r].Tiles.Count == 0 || regions[r].Tiles.FirstOrDefault(t => t.coords == adjacentCoordinates[i]) != null)
-                            {
-                                // Check if tile has adjectent tile on map
-                                if (regions[r].AddTile(tile))
-                                {
-                                    isAdded = true;
-                                    break;
-                                }
-                            }
-                            // Check if a tile that has yet to be added might connect to the region
-                            //else if (tile.coords.x + 1 < map[0].Count && map[tile.coords.y][tile.coords.x + 1] == tile.type)
-                            //{
-                            //    // Check if tile has adjectent tile on map
-                            //    if (regions[r].AddTile(tile))
-                            //    {
-                            //        isAdded = true;
-                            //        break;
-                            //    }
-                            //}
-                        }
-                    }
-                }
+                // Create a new region for each unvisited tile we find
+                Region newRegion = new();
+                regions.Add(newRegion);
 
-                if (!isAdded)
-                {
-                    Region newRegion = new();
-                    regions.Add(newRegion);
-                    if (!newRegion.AddTile(tile))
-                    {
-                        Console.WriteLine("Could not add tile to newly created region.");
-                    }
-                }
+                // Use flood fill to find all connected tiles of the same type
+                FloodFillRegion(tile, newRegion, visitedCoordinates);
             }
+        }
 
-            // Erect fencing in each region
+        private static void FloodFillRegion(Tile startTile, Region region, HashSet<(int x, int y)> visitedCoordinates)
+        {
+            // If we've visited this tile or it's the wrong type, stop
+            if (visitedCoordinates.Contains(startTile.coords))
+                return;
 
-            // Draw the regions for visualisation
-            foreach (var region in regions)
+            // Add the tile to the region and mark as visited
+            if (!region.AddTile(startTile))  // If we couldn't add the tile, stop
+                return;
+
+            visitedCoordinates.Add(startTile.coords);
+
+            // Get all adjacent coordinates
+            var adjacentCoordinates = GetAdjacentCoordinates(startTile);
+
+            // Check each adjacent coordinate
+            foreach (var adjCoord in adjacentCoordinates)
             {
-                Console.WriteLine("\n------------------------\nREGION: " + region.type + region.startingCoords);
-                DrawRegion(region);
-            }
+                // Skip if out of bounds
+                if (adjCoord.x < 0 || adjCoord.y < 0 ||
+                    adjCoord.y >= map.Count || adjCoord.x >= map[0].Count)
+                    continue;
 
-            // Count up tiles and fences
+                // Find the tile at these coordinates
+                var adjacentTile = tiles.FirstOrDefault(t => t.coords == adjCoord);
+                if (adjacentTile != null && adjacentTile.type == startTile.type)
+                {
+                    FloodFillRegion(adjacentTile, region, visitedCoordinates);
+                }
+            }
         }
 
         public class Tile
@@ -127,19 +148,18 @@ namespace AoC_24_12
         {
             public char type;
             public (int x, int y) startingCoords;
-            public List<Tile> Tiles { get; private set; } = new();
+            public List<Tile> Tiles { get; set; } = new();
 
             public bool AddTile(Tile tile)
             {
-                // If this is the first tile, add and set region data
+                // If this is the first tile, set region type
                 if (Tiles.Count == 0)
                 {
-                    startingCoords = tile.coords;
                     type = tile.type;
-                    Tiles.Add(tile);
-                    return true;
                 }
-                else if (tile.type == type)
+
+                // Only add if tile matches region type
+                if (tile.type == type)
                 {
                     Tiles.Add(tile);
                     return true;
@@ -177,6 +197,20 @@ namespace AoC_24_12
             }
         }
 
+        public static (int x, int y)[] GetFilteredCoordinates(Tile tile)
+        {
+            return GetAdjacentCoordinates(tile).Where(c =>
+            {
+                if (c.x < 0 || c.y < 0 || c.x > map[0].Count || c.y >= map.Count)
+                {
+                    Console.WriteLine("\tFilterC: Filtered out coordinate " + c);
+                    return false;
+                }
+                Console.WriteLine("\tFilterC: Kept coordinate " + c);
+                return true;
+            }).ToArray();
+        }
+
         public static (int x, int y)[] GetAdjacentCoordinates(Tile tile)
         {
             return [
@@ -187,14 +221,16 @@ namespace AoC_24_12
             ];
         }
 
-        public static void DrawRegion(Region region)
+        public static void PrintRegion(Region region)
         {
             Tile? prevTile = null;
+            var orderedTiles = region.Tiles.OrderBy(t => t.coords.y).ThenBy(t => t.coords.x).ToList();
+
+            Console.WriteLine("\n------------------------\nREGION: " + region.type + region.startingCoords);
             Console.Write("\n");
 
-            Console.Write(new string(' ', region.Tiles[0].coords.x));
-
-            foreach (var tile in region.Tiles)
+            Console.Write(new string(' ', orderedTiles[0].coords.x));
+            foreach (var tile in orderedTiles)
             {
                 string spacing = new string(' ', tile.coords.x);
 
@@ -202,9 +238,9 @@ namespace AoC_24_12
                 {
                     Console.Write("\n" + spacing);
                 }
-                else if (prevTile != null && prevTile.coords.x +1 != tile.coords.x)
+                else if (prevTile != null && prevTile.coords.x + 1 != tile.coords.x)
                 {
-                    Console.Write(new string(' ', tile.coords.x - prevTile.coords.x -1));
+                    Console.Write(new string(' ', (tile.coords.x - prevTile.coords.x) - 1));
                 }
 
                 // Draw tile in a 3x3 grid later, to display fencing
@@ -213,11 +249,179 @@ namespace AoC_24_12
                 prevTile = tile;
             }
             Console.Write("\n");
+        }
 
-            //foreach (var tile in region.Tiles)
-            //{
-            //    Console.WriteLine(tile.coords);
-            //}
+        public static void PrintRegionCells(Region region)
+        {
+            var orderedTiles = region.Tiles.OrderBy(t => t.coords.y).ThenBy(t => t.coords.x).ToList();
+            int maxY = map.Count;
+            Dictionary<(int y, int x), string[]> cells = new();
+
+            var emptyCell = new[] {
+                $"     ",
+                $"     ",
+                $"     "
+            };
+
+            // Populate dictionary
+            for (int y = 0; y < maxY; y++) {
+                for (int x = 0; x < map[0].Count; x++) {
+
+                    var foundTile = orderedTiles.FirstOrDefault(t => t.coords.x == x && t.coords.y == y);
+
+                    if (foundTile != null)
+                    {
+                        cells.Add((y, x), CreateTileCell(foundTile));
+                    }
+                    else
+                    {
+                        cells.Add((y, x), emptyCell);
+                    }
+                }
+            }
+
+            // Print from dictionary
+            for (int y = 0; y < maxY; y++)
+            {
+                string line0 = "";
+                string line1 = "";
+                string line2 = "";
+                for (int x = 0; x < map[0].Count; x++)
+                {
+                    if (cells.TryGetValue((y, x), out var cell))
+                    {
+                        line0 += cell[0];
+                        line1 += cell[1];
+                        line2 += cell[2];
+                    }
+                }
+                Console.Write(line0 + "\n");
+                Console.Write(line1 + "\n");
+                Console.Write(line2 + "\n");
+            }
+
+            Console.Write("\n");
+        }
+
+        public static void PrintMapCells()
+        {
+            var orderedTiles = tiles.OrderBy(t => t.coords.y).ThenBy(t => t.coords.x).ToList();
+            int maxY = map.Count;
+            Dictionary<(int y, int x), string[]> cells = new();
+
+            var emptyCell = new[] {
+                $"     ",
+                $"     ",
+                $"     "
+            };
+
+            // Populate dictionary
+            for (int y = 0; y < maxY; y++)
+            {
+                for (int x = 0; x < map[0].Count; x++)
+                {
+
+                    var foundTile = orderedTiles.FirstOrDefault(t => t.coords.x == x && t.coords.y == y);
+
+                    if (foundTile != null)
+                    {
+                        cells.Add((y, x), CreateTileCell(foundTile));
+                    }
+                    else
+                    {
+                        cells.Add((y, x), emptyCell);
+                    }
+                }
+            }
+
+            // Print from dictionary
+            for (int y = 0; y < maxY; y++)
+            {
+                string line0 = "";
+                string line1 = "";
+                string line2 = "";
+                for (int x = 0; x < map[0].Count; x++)
+                {
+                    if (cells.TryGetValue((y, x), out var cell))
+                    {
+                        line0 += cell[0];
+                        line1 += cell[1];
+                        line2 += cell[2];
+                    }
+                }
+                Console.Write(line0 + "\n");
+                Console.Write(line1 + "\n");
+                Console.Write(line2 + "\n");
+            }
+
+            Console.Write("\n");
+        }
+
+
+        public static string[] CreateTileCell(Tile tile)
+        {
+            var t = tile.type;
+            var fencing = GetFence(tile);
+            var N = fencing[0];
+            var S = fencing[1];
+            var E = fencing[2];
+            var W = fencing[3];
+            var A = (N != '.' && W != '.') ? '+' : '.';
+            var B = (N != '.' && E != '.') ? '+' : '.';
+            var C = (S != '.' && W != '.') ? '+' : '.';
+            var D = (S != '.' && E != '.') ? '+' : '.';
+
+
+            if (N == '-' && W == '.')
+            {
+                A = '-';
+            }
+            if (N == '-' && E == '.')
+            {
+                B = '-';
+            }
+            if (S == '-' && W == '.')
+            {
+                C = '-';
+            }
+            if (S == '-' && E == '.')
+            {
+                D = '-';
+            }
+
+            if (N == '.' && W == '|')
+            {
+                A = '|';
+            }
+            if (N == '.' && E == '|')
+            {
+                B = '|';
+            }
+            if (S == '.' && W == '|')
+            {
+                C = '|';
+            }
+            if (S == '.' && E == '|')
+            {
+                D = '|';
+            }
+
+            return new[] {
+                $"{A} {N} {B}",
+                $"{W} {t} {E}",
+                $"{C} {S} {D}"
+            };
+        }
+
+        public static char[] GetFence(Tile tile)
+        {
+            return new[]
+            {
+                tile.fencing.N ? '-' : '.',
+                tile.fencing.S ? '-' : '.',
+                tile.fencing.E ? '|' : '.',
+                tile.fencing.W ? '|' : '.'
+            };
         }
     }
 }
