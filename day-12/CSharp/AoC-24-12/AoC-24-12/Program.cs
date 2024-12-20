@@ -35,13 +35,15 @@ namespace AoC_24_12
                 region.SetFencing();
             }
 
-            //PrintRegionCells(regions[0]);
             // Draw the regions for visualisation
-            //foreach (var region in regions)
-            //{
-            //    PrintRegionCells(region);
-            //}
-            PrintMapCells();
+            foreach (var region in regions)
+            {
+                PrintRegionCells(region);
+                //Console.ReadKey(); // Waits for a key press.
+                Console.WriteLine("\nRegion "+ region.type + " has " + region.CountSides() + " sides.");
+                Console.WriteLine("\n\n");
+            }
+            ////PrintMapCells();
 
             // Count up tiles and fences
 
@@ -184,6 +186,14 @@ namespace AoC_24_12
 
         public static void PrintRegionCells(Region region)
         {
+            Console.WriteLine(StringifyRegion(region));
+        }
+
+        public static string StringifyRegion(Region region)
+        {
+            string stringifiedRegion = "";
+            List<string> regionLines = new();
+
             var orderedTiles = region.Tiles.OrderBy(t => t.coords.y).ThenBy(t => t.coords.x).ToList();
             int maxY = map.Count;
             Dictionary<(int y, int x), string[]> cells = new();
@@ -195,8 +205,10 @@ namespace AoC_24_12
             };
 
             // Populate dictionary
-            for (int y = 0; y < maxY; y++) {
-                for (int x = 0; x < map[0].Count; x++) {
+            for (int y = 0; y < maxY; y++)
+            {
+                for (int x = 0; x < map[0].Count; x++)
+                {
 
                     var foundTile = orderedTiles.FirstOrDefault(t => t.coords.x == x && t.coords.y == y);
 
@@ -226,18 +238,20 @@ namespace AoC_24_12
                         line2 += cell[2];
                     }
                 }
-                Console.Write(line0 + "\n");
-                Console.Write(line1 + "\n");
-                Console.Write(line2 + "\n");
+                if (!string.IsNullOrWhiteSpace(line0)) regionLines.Add(line0);
+                if (!string.IsNullOrWhiteSpace(line1)) regionLines.Add(line1);
+                if (!string.IsNullOrWhiteSpace(line2)) regionLines.Add(line2);
             }
 
-            Console.Write("\n");
+            stringifiedRegion = string.Join("\n", regionLines);
+            return stringifiedRegion;
         }
 
         public static void PrintMapCells()
         {
             var orderedTiles = tiles.OrderBy(t => t.coords.y).ThenBy(t => t.coords.x).ToList();
-            int maxY = map.Count;
+            int maxY = tiles.Max(t => t.coords.y);
+            int maxX = tiles.Max(t => t.coords.x);
             Dictionary<(int y, int x), string[]> cells = new();
 
             var emptyCell = new[] {
@@ -249,7 +263,7 @@ namespace AoC_24_12
             // Populate dictionary
             for (int y = 0; y < maxY; y++)
             {
-                for (int x = 0; x < map[0].Count; x++)
+                for (int x = 0; x < maxX; x++)
                 {
 
                     var foundTile = orderedTiles.FirstOrDefault(t => t.coords.x == x && t.coords.y == y);
@@ -289,7 +303,7 @@ namespace AoC_24_12
         }
 
 
-        public static string[] CreateTileCell(Tile tile)
+        public static string[] CreateTileCell(Tile tile, bool drawInnerCorners = true)
         {
             var t = tile.type;
             var fencing = GetFence(tile);
@@ -335,6 +349,40 @@ namespace AoC_24_12
             if (S == '.' && E == '|')
             {
                 D = '|';
+            }
+
+
+            if (drawInnerCorners)
+            {
+                var adjacentCoords = GetAdjacentCoordinates(tile);
+
+                Tile? tileN = tiles.FirstOrDefault(t => t.coords == adjacentCoords[0]);
+                Tile? tileS = tiles.FirstOrDefault(t => t.coords == adjacentCoords[1]);
+                Tile? tileE = tiles.FirstOrDefault(t => t.coords == adjacentCoords[2]);
+                Tile? tileW = tiles.FirstOrDefault(t => t.coords == adjacentCoords[3]);
+
+                if (tileN != null && !tileN.fencing.S && tileN.fencing.W && 
+                    tileW != null && !tileW.fencing.E) {
+                    A = '+';
+                }
+
+                if (tileN != null && !tileN.fencing.S && tileN.fencing.E &&
+                    tileE != null && !tileE.fencing.W)
+                {
+                    B = '+';
+                }
+
+                if (tileS != null && !tileS.fencing.N && tileS.fencing.W &&
+                    tileW != null && !tileW.fencing.E)
+                {
+                    C = '+';
+                }
+
+                if (tileS != null && !tileS.fencing.N && tileS.fencing.E &&
+                    tileE != null && !tileE.fencing.W)
+                {
+                    D = '+';
+                }
             }
 
             return new[] {
