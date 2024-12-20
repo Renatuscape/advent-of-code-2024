@@ -53,6 +53,28 @@
                     }
                 }
             }
+
+            public int GetArea()
+            {
+                return Tiles.Count;
+            }
+
+            public int GetCircumference()
+            {
+                int fences = 0;
+
+                foreach (Tile t in Tiles)
+                {
+                    fences += t.GetFencing();
+                }
+
+                return fences;
+            }
+
+            public int GetScore()
+            {
+                return GetArea() * GetCircumference();
+            }
         }
     }
 }
