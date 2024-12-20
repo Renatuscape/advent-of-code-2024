@@ -75,6 +75,22 @@
             {
                 return GetArea() * GetCircumference();
             }
+
+            public int CountSides()
+            {
+                int sides = 0;
+
+                var regionString = StringifyRegion(this);
+
+                foreach (var c in regionString)
+                {
+                    if (c == '+')
+                    {
+                        sides++;
+                    }
+                }
+                return sides;
+            }
         }
     }
 }
