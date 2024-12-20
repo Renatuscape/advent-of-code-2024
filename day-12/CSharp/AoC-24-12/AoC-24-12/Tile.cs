@@ -11,7 +11,6 @@
             public int GetFencing()
             {
                 int count = new[] { fencing.N, fencing.S, fencing.E, fencing.W }.Count(b => b);
-                Console.WriteLine($"Number of fenced sides: {count}");
                 return count;
             }
 
