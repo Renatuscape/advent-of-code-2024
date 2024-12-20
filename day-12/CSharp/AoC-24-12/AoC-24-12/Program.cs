@@ -45,10 +45,13 @@ namespace AoC_24_12
 
             // Count up tiles and fences
 
+            int price = 0;
             foreach (var region in regions)
             {
-
+                price += region.GetScore();
             }
+
+            Console.WriteLine("Total cost of fencing is: " + price);
         }
 
         public static void ConstructMap(string[] input)
