@@ -11,7 +11,7 @@ namespace AoC_24_12
 
         static void Main(string[] args)
         {
-            bool useExampleInput = true;
+            bool useExampleInput = false;
             string[] input;
 
             if (useExampleInput)
@@ -36,24 +36,30 @@ namespace AoC_24_12
             }
 
             // Draw the regions for visualisation
-            foreach (var region in regions)
-            {
-                PrintRegionCells(region);
-                //Console.ReadKey(); // Waits for a key press.
-                Console.WriteLine("\nRegion "+ region.type + " has " + region.CountSides() + " sides.");
-                Console.WriteLine("\n\n");
-            }
-            ////PrintMapCells();
+            //foreach (var region in regions)
+            //{
+            //    PrintRegionCells(region);
+            //    //Console.ReadKey(); // Waits for a key press.
+            //    Console.WriteLine("\nRegion "+ region.type + " has " + region.CountSides() + " sides.");
+            //    Console.WriteLine("\n\n");
+            //}
 
             // Count up tiles and fences
-
             int price = 0;
             foreach (var region in regions)
             {
                 price += region.GetScore();
             }
 
-            Console.WriteLine("Total cost of fencing is: " + price);
+            Console.WriteLine("Total cost of fencing for Part 1 is: " + price);
+
+            int price2 = 0;
+            foreach (var region in regions)
+            {
+                price2 += region.GetArea() * region.CountSides();
+            }
+
+            Console.WriteLine("Total cost of fencing for Part 2 is: " + price2);
         }
 
         public static void ConstructMap(string[] input)
